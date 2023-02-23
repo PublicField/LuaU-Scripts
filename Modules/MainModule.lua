@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
-local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 
 local MainModule = {}
