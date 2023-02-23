@@ -1,7 +1,6 @@
 -- DataStoreHandler module created by DevRobloxian in 2023. Easy to use and FREE!
 -- "Enable Studio Access to API Services" must be enabled to use module. Enable it in GameSettings -> Security -> "Enable Studio Access to API Services".
 
-
 --[[ INFO about properties in DataStoreHandler.new function that i recommend you to use.
 	PLEASE provide your own replicated instance(Folder, Model, anything that supports attributes) in replicatedInstance property in DataStoreHandler.new function to replicate data between server and client.
 	PLEASE provide your own data store name in dataStoreName property in DataStoreHandler.new function.
@@ -9,7 +8,6 @@
 ]]
 
 -- Prefix is begin of the data name in DataStore. You can use it to sort data. Example: "User_" .. Player.UserId, "User_" is prefix.
-
 
 local HttpService = game:GetService("HttpService") --Uses for Encoding and Decoding JSONs.
 local DataStoreService = game:GetService("DataStoreService")
