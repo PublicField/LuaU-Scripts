@@ -8,11 +8,31 @@
 
 -- Prefix is begin of the data name in DataStore. You can use it to sort data. Example: "User_" .. Player.UserId, "User_" is prefix.
 
-
 local HttpService = game:GetService("HttpService") --Uses for Encoding and Decoding JSONs.
 local DataStoreService = game:GetService("DataStoreService")
 
+local function ConvertTableToJSON(T : {any}) : string | nil --Returns table converted to JSON as a string.
+	local success, value = pcall(HttpService.JSONEncode, HttpService, T)
+
+	if not success then
+		return nil
+	end
+
+	return value
+end
+
+local function ConvertJSONToTable(json : string) : {any} | any --Returns JSON converted to table.
+	local success, value = pcall(HttpService.JSONDecode, HttpService, json)
+
+	if not success then
+		return json
+	end
+
+	return value
+end
+
 local DataStoreHandler = {}
+DataStoreHandler.__index = DataStoreHandler
 
 function DataStoreHandler.new(replicatedInstance : Instance?, dataStoreName : string?, prefix : string?, baseData : {[string]: any}?) --creates a DataStoreHandler with given properties.
 	local self = {}
@@ -25,107 +45,87 @@ function DataStoreHandler.new(replicatedInstance : Instance?, dataStoreName : st
 
 		return Folder
 	end)()
-	
-	function self:ConvertTableToJSON(T : {any}) : string | nil --Returns table converted to JSON as a string.
-		local success, value = pcall(HttpService.JSONEncode, HttpService, T)
 
-		if not success then
-			return nil
-		end
+	return setmetatable(self, DataStoreHandler)
+end
 
-		return value
+function DataStoreHandler:Get(index : string) --Gets data from replicated instance. Converts JSONs to table.
+	local Attribute = ConvertJSONToTable(self._replicatedInstance:GetAttribute(index))
+
+	return Attribute
+end
+
+function DataStoreHandler:RetrieveData(convertToJSON : boolean?) : {} | string --Returns table with replicated instance data and converts JSONs to tables if possible. converts to JSON if true is passed in the arguments.
+	local Attributes = self._replicatedInstance:GetAttributes()
+	local RetrievedData = {} :: {any}
+
+	for i,v in Attributes do
+		RetrievedData[i] = self:Get(i)
 	end
 
-	function self:ConvertJSONToTable(json : string) : {any} | any --Returns JSON converted to table.
-		local success, value = pcall(HttpService.JSONDecode, HttpService, json)
-
-		if not success then
-			return json
-		end
-
-		return value
-	end
-	
-	function self:Get(index : string) --Gets data from replicated instance. Converts JSONs to table.
-		local Attribute = self:ConvertJSONToTable(self._replicatedInstance:GetAttribute(index))
-
-		return Attribute
-	end
-	
-	function self:RetrieveData(convertToJSON : boolean?) : {} | string --Returns table with replicated instance data and converts JSONs to tables if possible. converts to JSON if true is passed in the arguments.
-		local Attributes = self._replicatedInstance:GetAttributes()
-		local RetrievedData = {}
-
-		for i,v in Attributes do
-			RetrievedData[i] = self:Get(i)
-		end
-
-		if convertToJSON then
-			RetrievedData = self:ConvertTableToJSON(RetrievedData)
-		end
-
-		return RetrievedData
+	if convertToJSON then
+		RetrievedData = ConvertTableToJSON(RetrievedData)
 	end
 
-	function self:RetrieveDataStore(data : string | number) : {any} --Returns table with data from DataStore and converts tables to JSONs.
-		local Data = self:GetDataStore(data)
-		local RetrieveDataStore = {}
+	return RetrievedData
+end
 
-		for i,v in Data do
-			if typeof(v) == "table" then
-				RetrieveDataStore[i] = self:ConvertTableToJSON(v) or "[]"
-			else
-				RetrieveDataStore[i] = v
-			end
-		end
+function DataStoreHandler:RetrieveDataStore(data : string | number) : {any} --Returns table with data from DataStore and converts tables to JSONs.
+	local Data = self:GetDataStore(data)
+	local RetrieveDataStore = {}
 
-		return RetrieveDataStore
-	end
-	
-	function self:GetDataStore(data : string) : {any} --Returns data from DataStore. if data doesn't exist or invalid it gets replaced with base data and returns it.
-		local success, result = pcall(self._dataStore.GetAsync, self._dataStore, self._prefix .. data)
-		
-		if not success then
-			return self:GetDataStore(data)
-		end
-
-		local convertedToTableValue = self:ConvertJSONToTable(result)
-		
-		if typeof(convertedToTableValue) ~= "table" or not next(convertedToTableValue) then
-			self:SetDataStore(data, self._baseData)
-			return self._baseData
-		end
-		
-		return convertedToTableValue
-	end
-	
-	function self:SetDataStore(data : string, value : any) : boolean --Sets new data in DataStore. Calls itself until completes successfully.
-		local success, result = pcall(self._dataStore.SetAsync, self._dataStore, self._prefix .. data, value)
-
-		if not success then
-			self:SetDataStore(data, value)
-		end
-
-		return true
-	end
-	
-	function self:UpdateData(data : string) --Retrieves DataStore and sets new values in replicated instance.
-		for i,v in self:RetrieveDataStore(data) do
-			self._replicatedInstance:SetAttribute(i, v)
+	for i,v in Data do
+		if typeof(v) == "table" then
+			RetrieveDataStore[i] = ConvertTableToJSON(v) or "[]"
+		else
+			RetrieveDataStore[i] = v
 		end
 	end
-	
-	function self:UpdateDataStore(data : string) --Retrieves replicated instance data and updates DataStore. Converts tables to JSONs.
-		self:SetDataStore(data, self:RetrieveData(true))
-	end
-	
-	function self:Set(index : string, value : any) --Sets new value in replicated instance. Converts JSONs to table.
-		local NewValue = typeof(value) == "table" and self:ConvertTableToJSON(value) or value
-		
-		self._replicatedInstance:SetAttribute(index, NewValue)
+
+	return RetrieveDataStore
+end
+
+function DataStoreHandler:GetDataStore(data : string) : {any} --Returns data from DataStore. if data doesn't exist or invalid it gets replaced with base data and returns it.
+	local success, result = pcall(self._dataStore.GetAsync, self._dataStore, self._prefix .. data)
+
+	if not success then
+		return self:GetDataStore(data)
 	end
 
-	return self
+	local convertedToTableValue = ConvertJSONToTable(result)
+
+	if typeof(convertedToTableValue) ~= "table" or not next(convertedToTableValue) then
+		self:SetDataStore(data, self._baseData)
+		return self._baseData
+	end
+
+	return convertedToTableValue
+end
+
+function DataStoreHandler:SetDataStore(data : string, value : any) : boolean --Sets new data in DataStore. Calls itself until completes successfully.
+	local success, result = pcall(self._dataStore.SetAsync, self._dataStore, self._prefix .. data, value)
+
+	if not success then
+		self:SetDataStore(data, value)
+	end
+
+	return true
+end
+
+function DataStoreHandler:UpdateData(data : string) --Retrieves DataStore and sets new values in replicated instance.
+	for i,v in self:RetrieveDataStore(data) do
+		self._replicatedInstance:SetAttribute(i, v)
+	end
+end
+
+function DataStoreHandler:UpdateDataStore(data : string) --Retrieves replicated instance data and updates DataStore. Converts tables to JSONs.
+	self:SetDataStore(data, self:RetrieveData(true))
+end
+
+function DataStoreHandler:Set(index : string, value : any) --Sets new value in replicated instance. Converts JSONs to table.
+	local NewValue = typeof(value) == "table" and ConvertTableToJSON(value) or value
+
+	self._replicatedInstance:SetAttribute(index, NewValue)
 end
 
 return DataStoreHandler
