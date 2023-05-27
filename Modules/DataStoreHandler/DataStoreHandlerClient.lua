@@ -1,26 +1,7 @@
 --This module is created to get data from replicated instance. you must know your replicated instance to use.
 
-local HttpService = game:GetService("HttpService")
-
-local function ConvertTableToJSON(T : {any}) : string | nil --Returns table converted to JSON as a string.
-	local success, value = pcall(HttpService.JSONEncode, HttpService, T)
-
-	if not success then
-		return nil
-	end
-
-	return value
-end
-
-local function ConvertJSONToTable(json : string) : {any} | any --Returns JSON converted to table.
-	local success, value = pcall(HttpService.JSONDecode, HttpService, json)
-
-	if not success then
-		return json
-	end
-
-	return value
-end
+local Main = script.Parent
+local Utility = require(Main:WaitForChild("Utility"))
 
 local ClientDataStoreHandler = {}
 ClientDataStoreHandler.__index = ClientDataStoreHandler
@@ -37,7 +18,7 @@ function ClientDataStoreHandler.new(replicatedInstance : Instance)
 end
 
 function ClientDataStoreHandler:Get(index : string) --Gets data from replicated instance. Converts JSONs to table.
-	local Attribute = ConvertJSONToTable(self._replicatedInstance:GetAttribute(index))
+	local Attribute = Utility.ConvertJSONToTable(self._replicatedInstance:GetAttribute(index))
 
 	return Attribute
 end
