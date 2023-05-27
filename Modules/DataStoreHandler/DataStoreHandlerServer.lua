@@ -8,28 +8,10 @@
 
 -- Prefix is begin of the data name in DataStore. You can use it to sort data. Example: "User_" .. Player.UserId, "User_" is prefix.
 
-local HttpService = game:GetService("HttpService") --Uses for Encoding and Decoding JSONs.
 local DataStoreService = game:GetService("DataStoreService")
 
-local function ConvertTableToJSON(T : {any}) : string | nil --Returns table converted to JSON as a string.
-	local success, value = pcall(HttpService.JSONEncode, HttpService, T)
-
-	if not success then
-		return nil
-	end
-
-	return value
-end
-
-local function ConvertJSONToTable(json : string) : {any} | any --Returns JSON converted to table.
-	local success, value = pcall(HttpService.JSONDecode, HttpService, json)
-
-	if not success then
-		return json
-	end
-
-	return value
-end
+local Main = script.Parent
+local Utility = require(Main:WaitForChild("Utility"))
 
 local DataStoreHandler = {}
 DataStoreHandler.__index = DataStoreHandler
@@ -50,7 +32,7 @@ function DataStoreHandler.new(replicatedInstance : Instance?, dataStoreName : st
 end
 
 function DataStoreHandler:Get(index : string) --Gets data from replicated instance. Converts JSONs to table.
-	local Attribute = ConvertJSONToTable(self._replicatedInstance:GetAttribute(index))
+	local Attribute = Utility.ConvertJSONToTable(self._replicatedInstance:GetAttribute(index))
 
 	return Attribute
 end
@@ -64,7 +46,7 @@ function DataStoreHandler:RetrieveData(convertToJSON : boolean?) : {} | string -
 	end
 
 	if convertToJSON then
-		RetrievedData = ConvertTableToJSON(RetrievedData)
+		RetrievedData = Utility.ConvertTableToJSON(RetrievedData)
 	end
 
 	return RetrievedData
@@ -76,7 +58,7 @@ function DataStoreHandler:RetrieveDataStore(data : string | number) : {any} --Re
 
 	for i,v in Data do
 		if typeof(v) == "table" then
-			RetrieveDataStore[i] = ConvertTableToJSON(v) or "[]"
+			RetrieveDataStore[i] = Utility.ConvertTableToJSON(v) or "[]"
 		else
 			RetrieveDataStore[i] = v
 		end
@@ -92,7 +74,7 @@ function DataStoreHandler:GetDataStore(data : string) : {any} --Returns data fro
 		return self:GetDataStore(data)
 	end
 
-	local convertedToTableValue = ConvertJSONToTable(result)
+	local convertedToTableValue = Utility.ConvertJSONToTable(result)
 
 	if typeof(convertedToTableValue) ~= "table" or not next(convertedToTableValue) then
 		self:SetDataStore(data, self._baseData)
@@ -123,7 +105,7 @@ function DataStoreHandler:UpdateDataStore(data : string) --Retrieves replicated 
 end
 
 function DataStoreHandler:Set(index : string, value : any) --Sets new value in replicated instance. Converts JSONs to table.
-	local NewValue = typeof(value) == "table" and ConvertTableToJSON(value) or value
+	local NewValue = typeof(value) == "table" and Utility.ConvertTableToJSON(value) or value
 
 	self._replicatedInstance:SetAttribute(index, NewValue)
 end
