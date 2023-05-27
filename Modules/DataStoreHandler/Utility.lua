@@ -1,8 +1,8 @@
 local HttpService = game:GetService("HttpService")
 
-local module = {}
+local Utility = {}
 
-function module.ConvertTableToJSON(T : {any}) : string | nil --Returns table converted to JSON as a string.
+function Utility.ConvertTableToJSON(T : {any}) : string | nil --Returns table converted to JSON as a string.
 	local success, value = pcall(HttpService.JSONEncode, HttpService, T)
 
 	if not success then
@@ -12,7 +12,7 @@ function module.ConvertTableToJSON(T : {any}) : string | nil --Returns table con
 	return value
 end
 
-function module.ConvertJSONToTable(json : string) : {any} | any --Returns JSON converted to table.
+function Utility.ConvertJSONToTable(json : string) : {any} | any --Returns JSON converted to table.
 	local success, value = pcall(HttpService.JSONDecode, HttpService, json)
 
 	if not success then
@@ -22,4 +22,4 @@ function module.ConvertJSONToTable(json : string) : {any} | any --Returns JSON c
 	return value
 end
 
-return module
+return Utility
