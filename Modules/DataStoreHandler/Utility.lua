@@ -2,7 +2,7 @@ local HttpService = game:GetService("HttpService")
 
 local Utility = {}
 
-function Utility.ConvertTableToJSON(T : {any}) : string | nil --Returns table converted to JSON as a string.
+function Utility.ConvertTableToJSON(T : {any}) : string? --Returns table converted to JSON as a string.
 	local success, value = pcall(HttpService.JSONEncode, HttpService, T)
 
 	if not success then
